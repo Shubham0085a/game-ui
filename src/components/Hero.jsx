@@ -15,6 +15,7 @@ const Hero = () => {
 
   const totalVideos = 4;
   const nextVideoRef = useRef(null);
+  const tiltRef = useRef(null);
 
   const handleVideoLoad = () => {
     setLoadedVideos((prev) => prev + 1);
@@ -82,6 +83,73 @@ const Hero = () => {
       },
     });
   });
+  useEffect(() => {
+    const element = tiltRef.current
+    if (!element) return
+
+    let bounds
+    let mouseX = 0
+    let mouseY = 0
+    const maxRotation = 15 // Maximum rotation in degrees
+
+    const calculateBounds = () => {
+      bounds = element.getBoundingClientRect()
+    }
+
+    const handleMouseMove = (e) => {
+      // Calculate mouse position relative to the center of the element
+      mouseX = (e.clientX - bounds.left) / bounds.width - 0.5
+      mouseY = (e.clientY - bounds.top) / bounds.height - 0.5
+
+      // Apply rotation based on mouse position
+      gsap.to(element, {
+        rotationY: mouseX * maxRotation * -2, // Multiply by -2 to make it follow mouse
+        rotationX: mouseY * maxRotation * 2,
+        duration: 0.3,
+        ease: "power2.out",
+        transformPerspective: 1000,
+        transformOrigin: "center center",
+      })
+    }
+
+    const handleMouseEnter = () => {
+      calculateBounds()
+      // Add subtle scale effect on hover
+      gsap.to(element, {
+        scale: 1.05,
+        duration: 0.3,
+        ease: "power2.out",
+      })
+    }
+
+    const handleMouseLeave = () => {
+      // Reset to original position when mouse leaves
+      gsap.to(element, {
+        rotationY: 0,
+        rotationX: 0,
+        scale: 1,
+        duration: 0.5,
+        ease: "power2.out",
+      })
+    }
+
+    // Initial calculation
+    calculateBounds()
+
+    // Add event listeners
+    element.addEventListener("mouseenter", handleMouseEnter)
+    element.addEventListener("mouseleave", handleMouseLeave)
+    element.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("resize", calculateBounds)
+
+    // Cleanup
+    return () => {
+      element.removeEventListener("mouseenter", handleMouseEnter)
+      element.removeEventListener("mouseleave", handleMouseLeave)
+      element.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("resize", calculateBounds)
+    }
+  }, [])
   const getVideosSrc = (index) => `videos/hero-${index}.mp4`;
 
   return (
@@ -100,7 +168,7 @@ const Hero = () => {
         className="relative z-10 h-dvh w-screen overflow-x-hidden rounded-lg bg-blue-75"
       >
         <div>
-          <div className="mask-clip-path absolute-center absolute z-50 size-64 cursor-pointer overflow-hidden rounded-lg">
+          <div ref={tiltRef} className="tilt-effect mask-clip-path absolute-center absolute z-50 size-64 cursor-pointer overflow-hidden rounded-lg shadow-xl" style={{ transformStyle: "preserve-3d" }}>
             <div
               onClick={handleMiniVdClick}
               className="origin-center scale-50 opacity-0 transition-all duration-500 ease-in hover:scale-100 hover:opacity-100"
